@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">腕上歌词 WearLyrics</string>
+    <string name="watch_mode_round">圆形表盘</string>
+    <string name="watch_mode_square">方形表盘</string>
+    <string name="watch_mode_full">全屏视图</string>
+    <string name="resume_sync">恢复同步</string>
+    <string name="bilingual_lyrics">双语译文</string>
+    <string name="word_by_word_glow">逐字卡拉OK高亮</string>
+    <string name="dark_mode_mesh">流光深色</string>
+    <string name="dark_mode_dim">极暗护眼</string>
+    <string name="dark_mode_oled">纯黑OLED</string>
+    <string name="font_size_normal">标准</string>
+    <string name="font_size_large">大字</string>
+    <string name="font_size_xlarge">特大</string>
+    <string name="custom_lrc_title">导入 / 编辑 LRC 动态歌词</string>
+    <string name="custom_lrc_apply">应用至腕表</string>
+    <string name="custom_lrc_cancel">取消</string>
+    <string name="cd_play_pause">播放或暂停</string>
+    <string name="cd_prev_track">上一首</string>
+    <string name="cd_next_track">下一首</string>
+    <string name="cd_display_settings">小屏显示与深色优化设置</string>
+    <string name="cd_track_selector">切换示范歌曲</string>
+    <string name="cd_lrc_editor">导入自定义LRC歌词</string>
+</resources>

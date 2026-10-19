@@ -1,0 +1,6 @@
+{
+  "name": "腕上歌词 WearLyrics",
+  "description": "Apple Music 风格的 Wear OS 实时动态歌词组件与腕上播放器，支持平滑弹簧滚动、逐字高亮与深色小屏阅读优化。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
