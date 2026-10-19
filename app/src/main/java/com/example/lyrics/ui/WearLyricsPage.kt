@@ -1,6 +1,5 @@
 package com.example.lyrics.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -10,12 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -33,7 +27,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -41,11 +34,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -67,29 +55,25 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
 import com.example.lyrics.model.LyricLine
-import com.example.lyrics.model.SongTrack
-import com.example.lyrics.model.WatchShapeMode
-import com.example.lyrics.model.WearLyricsConfig
 import com.example.ui.theme.PlusJakartaSansFontFamily
 import kotlin.math.abs
 
 /**
- * Dedicated controller state class for the Wear OS Lyrics Page.
- * Precisely centers the active singing lyric line vertically in the middle of the screen.
+ * Controller state class for the embeddable Wear OS Lyrics Page (`WearLyricsPage`).
+ * Precisely centers the active singing lyric line vertically in the middle of the viewport.
  */
 @Stable
 class WearLyricsPageState(
@@ -105,7 +89,6 @@ class WearLyricsPageState(
     suspend fun smoothCenterOnLine(activeIndex: Int, totalCount: Int) {
         if (totalCount <= 0 || activeIndex !in 0 until totalCount) return
 
-        // Wait one frame to ensure LazyColumn layoutInfo is up to date
         withFrameNanos { }
 
         val layoutInfo = listState.layoutInfo
@@ -115,7 +98,6 @@ class WearLyricsPageState(
             val viewportStart = layoutInfo.viewportStartOffset.toFloat()
             val viewportEnd = layoutInfo.viewportEndOffset.toFloat()
             val viewportHeight = viewportEnd - viewportStart
-            // Optical center (45% from top of viewport) so the active lyric line sits dead-center
             val targetCenter = viewportStart + (viewportHeight * 0.45f)
             val itemCenter = visibleItem.offset + (visibleItem.size / 2f)
             val scrollDelta = itemCenter - targetCenter
@@ -130,7 +112,6 @@ class WearLyricsPageState(
                 )
             }
         } else {
-            // Item is off-screen: scroll it to center first, then fine-tune
             val positiveCenterOffset = (activeItemHeightPx * 0.65f).toInt()
             listState.scrollToItem(
                 index = activeIndex,
@@ -168,27 +149,27 @@ fun rememberWearLyricsPageState(
 }
 
 /**
- * Pure Wear OS Real-Time Dynamic Lyrics Page (`WearLyricsPage`)
+ * Standalone, transparent-background Wear OS Real-Time Dynamic Lyrics Component (`WearLyricsPage`).
  *
- * Displays ONLY the real-time synchronized lyrics without any media control buttons or song info:
- * - Active singing line is strictly centered in the middle of the screen
- * - Apple Music style per-character left-to-right karaoke fill sweep & spring scale
- * - Animated 3-dot instrumental interlude indicator (`•••`)
- * - Deep dark background optimization with OLED luminance control & symmetrical top/bottom fade masks
+ * Ready to be embedded directly into any Wear OS media player or page:
+ * - Zero background drawing (transparent container so host project controls background)
+ * - Active singing line is centered both horizontally and vertically
+ * - Apple Music style single-character left-to-right continuous karaoke color fill sweep
+ * - Smooth spring scale transition & top/bottom edge fade mask
  */
 @Composable
 fun WearLyricsPage(
-    track: SongTrack,
+    lyrics: List<LyricLine>,
     currentPositionMs: Long,
-    activeLineIndex: Int,
-    isPlaying: Boolean,
-    isUserBrowsingLyrics: Boolean,
-    config: WearLyricsConfig,
-    onLyricLineClick: (LyricLine) -> Unit,
-    onUserManualScroll: () -> Unit,
-    onResumeSyncClick: () -> Unit,
+    activeLineIndex: Int = lyrics.indexOfLast { currentPositionMs >= it.startMs }.coerceAtLeast(0),
+    isUserBrowsingLyrics: Boolean = false,
+    showTranslation: Boolean = true,
+    fontScaleFactor: Float = 1.15f,
+    fontFamily: FontFamily = PlusJakartaSansFontFamily,
+    onLyricLineClick: (LyricLine) -> Unit = {},
+    onUserManualScroll: () -> Unit = {},
     modifier: Modifier = Modifier,
-    pageState: WearLyricsPageState = rememberWearLyricsPageState()
+    pageState: WearLyricsPageState = rememberWearLyricsPageState(initialFirstVisibleItemIndex = activeLineIndex)
 ) {
     val isDragged by pageState.listState.interactionSource.collectIsDraggedAsState()
 
@@ -205,44 +186,30 @@ fun WearLyricsPage(
             .testTag("wear_lyrics_page_root")
     ) {
         val viewportHeightDp = maxHeight
-        // Symmetrical half-screen top & bottom padding ensures even the first and last lyric lines
-        // can be scrolled to the exact vertical center of the screen.
         val halfScreenVerticalPadding = (viewportHeightDp * 0.45f).coerceAtLeast(100.dp)
 
-        // Smoothly center the active lyric line whenever activeLineIndex, track, or viewport changes
         LaunchedEffect(
             activeLineIndex,
-            track.id,
+            lyrics,
             isUserBrowsingLyrics,
             viewportHeightDp,
-            config.fontScale,
-            config.showTranslation
+            fontScaleFactor,
+            showTranslation
         ) {
-            if (!isUserBrowsingLyrics && track.lyrics.isNotEmpty()) {
+            if (!isUserBrowsingLyrics && lyrics.isNotEmpty()) {
                 pageState.smoothCenterOnLine(
                     activeIndex = activeLineIndex,
-                    totalCount = track.lyrics.size
+                    totalCount = lyrics.size
                 )
             }
         }
 
-        val isRoundWatch = config.watchShapeMode == WatchShapeMode.ROUND
-        val horizontalSafePadding = if (isRoundWatch) 24.dp else 18.dp
-
-        // 1. Deep Dark Optimized Apple Music Mesh Background
-        AppleMusicDarkMeshBackground(
-            palette = track.palette,
-            darkMode = config.darkBackgroundMode,
-            isPlaying = isPlaying
-        )
-
-        // 2. Pure Synchronized Lyrics Stream Centered Vertically
         LazyColumn(
             state = pageState.listState,
             flingBehavior = ScrollableDefaults.flingBehavior(),
             contentPadding = PaddingValues(
-                start = horizontalSafePadding,
-                end = horizontalSafePadding,
+                start = 20.dp,
+                end = 20.dp,
                 top = halfScreenVerticalPadding,
                 bottom = halfScreenVerticalPadding
             ),
@@ -254,7 +221,7 @@ fun WearLyricsPage(
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()
-                    // Symmetrical top & bottom smooth alpha fade mask for small watch screen readability
+                    // Symmetrical top & bottom edge alpha fade for small Wear OS screens
                     drawRect(
                         brush = Brush.verticalGradient(
                             0.0f to Color.Transparent,
@@ -268,8 +235,8 @@ fun WearLyricsPage(
                 .testTag("wear_lyrics_lazy_list")
         ) {
             itemsIndexed(
-                items = track.lyrics,
-                key = { _, line -> "${track.id}_${line.id}" }
+                items = lyrics,
+                key = { index, line -> "${line.id}_$index" }
             ) { index, line ->
                 val distanceFromActive = abs(index - activeLineIndex)
                 val isCurrentActive = index == activeLineIndex
@@ -281,12 +248,9 @@ fun WearLyricsPage(
                     isPast = isPastLine,
                     distanceFromActive = distanceFromActive,
                     currentPositionMs = currentPositionMs,
-                    accentColor = track.palette.accentColor,
-                    fontScaleFactor = config.fontScale.scaleFactor,
-                    showTranslation = config.showTranslation,
-                    enableWordByWordGlow = config.enableWordByWordGlow,
-                    enablePeripheralFade = config.enablePeripheralBlurFade,
-                    isRoundWatch = isRoundWatch,
+                    fontScaleFactor = fontScaleFactor,
+                    fontFamily = fontFamily,
+                    showTranslation = showTranslation,
                     onActiveItemMeasured = { heightPx ->
                         if (heightPx > 0) {
                             pageState.activeItemHeightPx = heightPx
@@ -296,53 +260,9 @@ fun WearLyricsPage(
                 )
             }
         }
-
-        // 3. Minimal "恢复同步" pill shown ONLY temporarily when user manually scrolls away
-        AnimatedVisibility(
-            visible = isUserBrowsingLyrics,
-            enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.85f),
-            exit = fadeOut(tween(180)) + scaleOut(tween(180), targetScale = 0.85f),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 18.dp)
-        ) {
-            Surface(
-                onClick = onResumeSyncClick,
-                shape = CircleShape,
-                color = track.palette.accentColor.copy(alpha = 0.92f),
-                contentColor = Color.Black,
-                shadowElevation = 6.dp,
-                modifier = Modifier.testTag("resume_sync_pill")
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MyLocation,
-                        contentDescription = stringResource(R.string.resume_sync),
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.resume_sync),
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.Black
-                        )
-                    )
-                }
-            }
-        }
     }
 }
 
-/**
- * Individual lyric line item styled after Apple Music Live Lyrics and optimized for Wear OS:
- * - Spring physics scale expansion (`1.0f` vs `0.86f`)
- * - Intra-character left-to-right continuous karaoke color fill sweep
- * - Distance-based opacity & subtle horizontal curve inset on round watch faces
- */
 @Composable
 private fun AppleMusicLyricLineItem(
     line: LyricLine,
@@ -350,12 +270,9 @@ private fun AppleMusicLyricLineItem(
     isPast: Boolean,
     distanceFromActive: Int,
     currentPositionMs: Long,
-    accentColor: Color,
     fontScaleFactor: Float,
+    fontFamily: FontFamily,
     showTranslation: Boolean,
-    enableWordByWordGlow: Boolean,
-    enablePeripheralFade: Boolean,
-    isRoundWatch: Boolean,
     onActiveItemMeasured: (Int) -> Unit,
     onClick: () -> Unit
 ) {
@@ -371,7 +288,6 @@ private fun AppleMusicLyricLineItem(
 
     val targetAlpha = when {
         isActive -> 1.0f
-        !enablePeripheralFade -> 0.45f
         distanceFromActive == 1 -> if (isPast) 0.36f else 0.48f
         distanceFromActive == 2 -> 0.22f
         else -> 0.12f
@@ -402,7 +318,7 @@ private fun AppleMusicLyricLineItem(
             .clip(RoundedCornerShape(8.dp))
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(color = accentColor),
+                indication = ripple(color = Color.White),
                 onClick = onClick
             )
             .padding(horizontal = 12.dp, vertical = if (isActive) 10.dp else 6.dp)
@@ -411,58 +327,48 @@ private fun AppleMusicLyricLineItem(
         if (line.isInterlude) {
             AppleMusicInterludeDots(
                 isActive = isActive,
-                progress = line.lineProgress(currentPositionMs),
-                accentColor = accentColor
+                progress = line.lineProgress(currentPositionMs)
             )
         } else {
             val baseFontSize = (19.0f * fontScaleFactor).sp
             val lineHeight = (25.5f * fontScaleFactor).sp
 
-            if (isActive && enableWordByWordGlow) {
+            if (isActive) {
                 AppleMusicKaraokeSweepText(
                     line = line,
                     currentPositionMs = currentPositionMs,
                     baseFontSize = baseFontSize,
                     lineHeight = lineHeight,
-                    accentColor = accentColor
+                    fontFamily = fontFamily
                 )
             } else {
-                // Whole-line highlight or dimmed inactive line
                 Text(
                     text = line.text,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    textAlign = TextAlign.Center,
                     style = TextStyle(
-                        fontFamily = PlusJakartaSansFontFamily,
-                        fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Bold,
+                        fontFamily = fontFamily,
+                        fontWeight = FontWeight.Bold,
                         fontSize = baseFontSize,
                         lineHeight = lineHeight,
                         letterSpacing = (-0.2).sp,
                         color = Color.White,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        shadow = if (isActive) {
-                            Shadow(
-                                color = accentColor.copy(alpha = 0.55f),
-                                offset = Offset(0f, 0f),
-                                blurRadius = 14f
-                            )
-                        } else null
+                        textAlign = TextAlign.Center
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            // Optional bilingual translation line optimized for small watch screens
             if (showTranslation && !line.translation.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = line.translation,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    textAlign = TextAlign.Center,
                     style = TextStyle(
-                        fontFamily = PlusJakartaSansFontFamily,
+                        fontFamily = fontFamily,
                         fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
                         fontSize = (13.0f * fontScaleFactor).sp,
                         lineHeight = (17.5f * fontScaleFactor).sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        textAlign = TextAlign.Center,
                         color = if (isActive) {
                             Color.White.copy(alpha = 0.82f)
                         } else {
@@ -478,7 +384,7 @@ private fun AppleMusicLyricLineItem(
 
 /**
  * Renders Apple Music Sing / Live Lyrics style karaoke text where each individual character
- * smoothly fills with glowing color from left to right (`charLeft -> charRight`) as it is sung.
+ * smoothly fills with pure white color from left to right (`charLeft -> charRight`) as it is sung.
  */
 @Composable
 private fun AppleMusicKaraokeSweepText(
@@ -486,7 +392,7 @@ private fun AppleMusicKaraokeSweepText(
     currentPositionMs: Long,
     baseFontSize: TextUnit,
     lineHeight: TextUnit,
-    accentColor: Color
+    fontFamily: FontFamily
 ) {
     val charTimings = remember(line.id, line.text) { line.computeCharTimings() }
     var textLayoutResult by remember(line.text, baseFontSize) {
@@ -494,12 +400,12 @@ private fun AppleMusicKaraokeSweepText(
     }
 
     val sharedTextStyle = TextStyle(
-        fontFamily = PlusJakartaSansFontFamily,
+        fontFamily = fontFamily,
         fontWeight = FontWeight.ExtraBold,
         fontSize = baseFontSize,
         lineHeight = lineHeight,
         letterSpacing = (-0.2).sp,
-        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        textAlign = TextAlign.Center
     )
 
     Box(
@@ -509,7 +415,7 @@ private fun AppleMusicKaraokeSweepText(
         // 1. Base Layer: Un-sung portion of the active line in translucent dim white
         Text(
             text = line.text,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            textAlign = TextAlign.Center,
             style = sharedTextStyle.copy(
                 color = Color.White.copy(alpha = 0.30f)
             ),
@@ -517,18 +423,13 @@ private fun AppleMusicKaraokeSweepText(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // 2. Foreground Karaoke Sweep Layer: Crisp glowing white masked continuously left-to-right
+        // 2. Foreground Karaoke Sweep Layer: Crisp white masked continuously left-to-right
         // across each character's exact pixel bounding box
         Text(
             text = line.text,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            textAlign = TextAlign.Center,
             style = sharedTextStyle.copy(
-                color = Color.White,
-                shadow = Shadow(
-                    color = accentColor.copy(alpha = 0.72f),
-                    offset = Offset(0f, 0f),
-                    blurRadius = 18f
-                )
+                color = Color.White
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -539,7 +440,6 @@ private fun AppleMusicKaraokeSweepText(
                         return@drawWithContent
                     }
 
-                    // Draw the full glowing white text into the offscreen layer first
                     drawContent()
 
                     val totalLines = layout.lineCount
@@ -569,7 +469,6 @@ private fun AppleMusicKaraokeSweepText(
 
                         when {
                             currentPositionMs <= lineStartMs -> {
-                                // This visual line has not started yet -> mask to 0% alpha
                                 drawRect(
                                     color = Color.Transparent,
                                     topLeft = Offset(0f, stripTop),
@@ -579,11 +478,10 @@ private fun AppleMusicKaraokeSweepText(
                             }
 
                             currentPositionMs >= lineEndMs -> {
-                                // This visual line is completely sung -> keep 100% alpha
+                                // Entire visual line is already sung -> keep 100% opaque
                             }
 
                             else -> {
-                                // Locate the exact character currently being sung on this visual line
                                 var activeChar = rawStartChar
                                 for (c in rawStartChar..lastCharOnLine) {
                                     val (_, cEnd) = charTimings[c]
@@ -602,7 +500,6 @@ private fun AppleMusicKaraokeSweepText(
                                 val charLeft = charBox.left
                                 val charWidth = (charBox.right - charBox.left).coerceAtLeast(2f)
 
-                                // Sub-pixel horizontal fill position sweeping from left to right inside activeChar
                                 val sweepX = charLeft + (charWidth * charProgress)
                                 val featherPx = (charWidth * 0.24f).coerceIn(3f, 10f)
 
@@ -639,8 +536,7 @@ private fun AppleMusicKaraokeSweepText(
 @Composable
 private fun AppleMusicInterludeDots(
     isActive: Boolean,
-    progress: Float,
-    accentColor: Color
+    progress: Float
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "interludePulse")
     val pulse by infiniteTransition.animateFloat(
@@ -674,9 +570,7 @@ private fun AppleMusicInterludeDots(
                         scaleY = scale
                     }
                     .clip(CircleShape)
-                    .background(
-                        if (isActive && dotFill > 0.6f) accentColor else Color.White.copy(alpha = dotFill)
-                    )
+                    .background(Color.White.copy(alpha = dotFill))
             )
         }
     }

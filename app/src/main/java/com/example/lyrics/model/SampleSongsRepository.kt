@@ -1,10 +1,7 @@
 package com.example.lyrics.model
 
-import androidx.compose.ui.graphics.Color
-
 /**
- * Curated library of multi-genre tracks with millisecond-accurate Apple Music style
- * lyric lines, bilingual translations, instrumental breaks, and OLED dark palettes.
+ * Sample synchronized lyrics data for testing and previewing the embeddable Wear OS Lyrics Page.
  */
 object SampleSongsRepository {
 
@@ -40,14 +37,6 @@ object SampleSongsRepository {
             artist = "林深 & 曜",
             album = "腕上夜曲 Nocturne",
             durationMs = durationMs,
-            palette = AlbumPalette(
-                primaryGlow = Color(0xFFFF2D55),
-                secondaryGlow = Color(0xFF7B2CBF),
-                tertiaryGlow = Color(0xFFFF9E00),
-                accentColor = Color(0xFFFF5C8A),
-                deepBase = Color(0xFF07050A)
-            ),
-            artworkStyle = ArtworkStyle.VELVET_RIBBONS,
             lyrics = buildLyricList(rawLines, durationMs)
         )
     }
@@ -75,14 +64,6 @@ object SampleSongsRepository {
             artist = "Midnight Synth",
             album = "Cybernetic Tides",
             durationMs = durationMs,
-            palette = AlbumPalette(
-                primaryGlow = Color(0xFF00F0FF),
-                secondaryGlow = Color(0xFFFF007F),
-                tertiaryGlow = Color(0xFF5A189A),
-                accentColor = Color(0xFF00F0FF),
-                deepBase = Color(0xFF04070F)
-            ),
-            artworkStyle = ArtworkStyle.NEON_SYNTHWAVE,
             lyrics = buildLyricList(rawLines, durationMs)
         )
     }
@@ -110,14 +91,6 @@ object SampleSongsRepository {
             artist = "银河电台 Cosmic FM",
             album = "Zero Gravity 零重力",
             durationMs = durationMs,
-            palette = AlbumPalette(
-                primaryGlow = Color(0xFF6C63FF),
-                secondaryGlow = Color(0xFF00B4D8),
-                tertiaryGlow = Color(0xFFE0AAFF),
-                accentColor = Color(0xFFA594F9),
-                deepBase = Color(0xFF05060D)
-            ),
-            artworkStyle = ArtworkStyle.STARLIGHT_COSMOS,
             lyrics = buildLyricList(rawLines, durationMs)
         )
     }
@@ -145,14 +118,6 @@ object SampleSongsRepository {
             artist = "Nordik Drift",
             album = "Polaris Sessions",
             durationMs = durationMs,
-            palette = AlbumPalette(
-                primaryGlow = Color(0xFF00E676),
-                secondaryGlow = Color(0xFF00B4D8),
-                tertiaryGlow = Color(0xFF7209B7),
-                accentColor = Color(0xFF00F5D4),
-                deepBase = Color(0xFF040908)
-            ),
-            artworkStyle = ArtworkStyle.AURORA_BOREALIS,
             lyrics = buildLyricList(rawLines, durationMs)
         )
     }
